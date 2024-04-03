@@ -2,6 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import Loading from "./Loading";
 
+const URLHOST = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 function FormVideo() {
     const [videoLink, setVideoLink] = useState('');
     const [url, setUrl] = useState('');
@@ -17,8 +19,8 @@ function FormVideo() {
         setLoading(true); // Mostrar el indicador de carga al comenzar la descarga
 
         try {
-            const res = await axios.post('http://localhost:4000/api/video-info', { videoLink });
-            const response = await axios.post('http://localhost:4000/api/download-video', { videoLink }, { responseType: 'blob' });
+            const res = await axios.post(`${URLHOST}/api/video-info`, { videoLink });
+            const response = await axios.post(`${URLHOST}/api/download-video`, { videoLink }, { responseType: 'blob' });
             setTitle(res.data.title);
 
             const blobUrl = window.URL.createObjectURL(new Blob([response.data]));

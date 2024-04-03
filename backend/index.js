@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import ytdl from "ytdl-core";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -8,13 +9,7 @@ const PORT = process.env.PORT || 4000;
 app.use(bodyParser.json());
 
 // Configurar CORS para permitir solicitudes solo desde un origen específico
-app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173"); // Reemplaza esta URL con la URL de tu aplicación frontend
-    res.setHeader("Access-Control-Allow-Methods", "POST"); // Métodos permitidos (puedes agregar otros métodos según sea necesario)
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.setHeader("Access-Control-Allow-Credentials", true); // Si permites credenciales (cookies, encabezados de autenticación, etc.)
-    next();
-});
+app.use(cors())
 
 // Ruta para manejar las solicitudes POST del frontend
 app.post('/api/download-video', async (req, res) => {
