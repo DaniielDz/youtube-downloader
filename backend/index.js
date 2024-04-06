@@ -61,6 +61,23 @@ app.post('/api/video-info', async (req, res) => {
     }
 })
 
+app.post('/api/video-formats', async (req, res) => {
+    const { videoLink } = req.body;
+    try {
+        if(!ytdl.validateURL(videoLink)) {
+            return res.status(400).json({ error: 'Enlace de video de YouTube no válido' });
+        }
+        // Obtener formatos de video disponibles
+        const formats = await ytdl.getInfo(videoLink);
+        
+        res.json({ formats });
+    }
+    catch(error) {
+        console.error('Error al obtener los formatos del video:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+})
+
 app.listen(PORT, () => {
     console.log(`El servidor esta funcionando en el puerto: ${PORT}`);
 })
