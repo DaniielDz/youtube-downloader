@@ -24,6 +24,7 @@ function FormVideo() {
         try {
             setMediaOptions({ audios: [], iframe: '' });
             setError('')
+            setDownloaded('')
             setLoading(true);
             const videoFormatsRes = await axios.post(`${URLHOST}/api/video-formats`, { videoLink });
             const { formats } = videoFormatsRes.data.formats;
