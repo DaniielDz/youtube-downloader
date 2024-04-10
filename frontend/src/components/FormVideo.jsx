@@ -13,6 +13,7 @@ function FormVideo() {
     const [loading, setLoading] = useState(false);
     const [loadingDownload, setLoadingDownload] = useState(false);
     const [mediaOptions, setMediaOptions] = useState({ audios: [], iframe: '' });
+    const [error, setError] = useState('');
     const selectRef = useRef(null);
 
     const handleChange = e => setVideoLink(e.target.value);
@@ -21,6 +22,7 @@ function FormVideo() {
         
         try {
             setMediaOptions({ audios: [], iframe: '' });
+            setError('')
             setLoading(true);
             const videoFormatsRes = await axios.post(`${URLHOST}/api/video-formats`, { videoLink });
             const { formats } = videoFormatsRes.data.formats;
@@ -39,7 +41,7 @@ function FormVideo() {
             setMediaOptions(newMediaOptions);
 
         } catch (error) {
-            console.log(error.response?.data?.error || 'Error interno del servidor');
+            setError(error.response?.data?.error);
         } finally {
             setLoading(false);
         }
@@ -73,6 +75,7 @@ function FormVideo() {
                     type="text" id="inputUrl" value={videoLink} onChange={handleChange}  autoComplete="off" placeholder="Pegue aquí el link"/>
                     <Button onClickFunction={fetchMediaOptions} text={"Buscar Video"}/>
                 </div>
+                {error && <p className=" text-red-600 font-semibold text-lg">{error}</p>}
                 <div className="flex justify-center">
                     <SelectField audios={mediaOptions.audios} selectRef={selectRef}/>
                     {
