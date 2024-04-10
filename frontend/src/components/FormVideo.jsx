@@ -14,6 +14,7 @@ function FormVideo() {
     const [loadingDownload, setLoadingDownload] = useState(false);
     const [mediaOptions, setMediaOptions] = useState({ audios: [], iframe: '' });
     const [error, setError] = useState('');
+    const [downloaded, setDownloaded] = useState('');
     const selectRef = useRef(null);
 
     const handleChange = e => setVideoLink(e.target.value);
@@ -61,6 +62,7 @@ function FormVideo() {
         }
         finally {
             setLoadingDownload(false)
+            setDownloaded('Audio descargado con exito.')
         }
 
     };
@@ -76,6 +78,7 @@ function FormVideo() {
                     <Button onClickFunction={fetchMediaOptions} text={"Buscar Video"}/>
                 </div>
                 {error && <p className=" text-red-600 font-semibold text-lg">{error}</p>}
+                {downloaded && <p className=" text-green-600 font-semibold text-lg">{downloaded}</p>}
                 <div className="flex justify-center">
                     <SelectField audios={mediaOptions.audios} selectRef={selectRef}/>
                     {
