@@ -11,13 +11,16 @@ const URLHOST = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 function FormVideo() {
     const [videoLink, setVideoLink] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loadingDownload, setLoadingDownload] = useState(false);
     const [mediaOptions, setMediaOptions] = useState({ audios: [], iframe: '' });
     const selectRef = useRef(null);
 
     const handleChange = e => setVideoLink(e.target.value);
 
     const fetchMediaOptions = async () => {
+        
         try {
+            setMediaOptions({ audios: [], iframe: '' });
             setLoading(true);
             const videoFormatsRes = await axios.post(`${URLHOST}/api/video-formats`, { videoLink });
             const { formats } = videoFormatsRes.data.formats;
@@ -43,12 +46,21 @@ function FormVideo() {
     };
 
     const handleDownload = async () => {
-        // Obtener el valor seleccionado en el elemento select
-        const itagValue = parseInt(selectRef.current.value);
-        const info = await axios.post(`${URLHOST}/api/video-info`, { videoLink });
-        const download = await axios.post(`${URLHOST}/api/download-audio`, { videoLink, itagValue }, { responseType: 'blob' });
-        const blobUrl = window.URL.createObjectURL(new Blob([download.data]));
-        setMediaOptions(prevState => ({ ...prevState, title: info.data.title, url: blobUrl }));
+        try {
+            setLoadingDownload(true);
+            mediaOptions.audios = [];
+            
+            // Obtener el valor seleccionado en el elemento select
+            const itagValue = parseInt(selectRef.current.value);
+            const info = await axios.post(`${URLHOST}/api/video-info`, { videoLink });
+            const download = await axios.post(`${URLHOST}/api/download-audio`, { videoLink, itagValue }, { responseType: 'blob' });
+            const blobUrl = window.URL.createObjectURL(new Blob([download.data]));
+            setMediaOptions(prevState => ({ ...prevState, title: info.data.title, url: blobUrl }));
+        }
+        finally {
+            setLoadingDownload(false)
+        }
+
     };
 
     return (
@@ -68,10 +80,10 @@ function FormVideo() {
                             <DownloadBtn mediaOptions={mediaOptions} text={"Guardar Audio"}/>
                         ) : (
                             <>
-                                {loading && <Loading />}
-                                {mediaOptions.audios.length > 0 && (
-                                    <Button onClickFunction={handleDownload} text={"Descargar Audio"} />
-                                )}
+                                {loading && <Loading text={'Buscando el video...'}/>}
+                                {loadingDownload && <Loading text={'Descargando el audio...'}/> }
+
+                                {mediaOptions.audios.length > 0 && <Button onClickFunction={handleDownload} text={"Descargar Audio"} />}
                             </>
                         )
                     }
