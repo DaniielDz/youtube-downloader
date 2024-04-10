@@ -1,13 +1,17 @@
 import { useState, useRef } from "react";
 import axios from "axios";
 import Loading from "./Loading";
+import Button from "./Button";
+import SelectField from "./SelectField";
+import DownloadBtn from "./DownloadBtn";
+import Iframe from "./Iframe";
 
 const URLHOST = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 function FormVideo() {
     const [videoLink, setVideoLink] = useState('');
     const [loading, setLoading] = useState(false);
-    const [mediaOptions, setMediaOptions] = useState({ videos: [], audios: [], iframe: '' });
+    const [mediaOptions, setMediaOptions] = useState({ audios: [], iframe: '' });
     const selectRef = useRef(null);
 
     const handleChange = e => setVideoLink(e.target.value);
@@ -17,21 +21,16 @@ function FormVideo() {
             setLoading(true);
             const videoFormatsRes = await axios.post(`${URLHOST}/api/video-formats`, { videoLink });
             const { formats } = videoFormatsRes.data.formats;
-            const newMediaOptions = { videos: [], audios: [], iframe: videoFormatsRes.data.formats.videoDetails.embed.iframeUrl, formato: '' };
+            const newMediaOptions = { audios: [], iframe: videoFormatsRes.data.formats.videoDetails.embed.iframeUrl};
 
             formats.forEach(obj => {
-                console.log(obj)
-                const { hasVideo, hasAudio, contentLength, qualityLabel, itag } = obj;
+                const { hasAudio, contentLength, itag } = obj;
                 const tamañoBytes = parseInt(contentLength);
                 const tamañoMB = tamañoBytes / (1024 * 1024);
 
                 if (isNaN(tamañoMB)) return;
 
-                if (hasVideo && hasAudio) {
-                    newMediaOptions.videos.push({ info: `Calidad: ${qualityLabel}, Tamaño: ${tamañoMB.toFixed(2)}Mb`, itag, tipo: 'video' });
-                } else if(hasAudio){
-                    newMediaOptions.audios.push({ info: `Tamaño: ${tamañoMB.toFixed(2)}Mb`, itag, tipo: 'audio'});
-                }
+                if(hasAudio){ newMediaOptions.audios.push({ info: `Tamaño: ${tamañoMB.toFixed(2)}Mb`, itag}); }
             });
 
             setMediaOptions(newMediaOptions);
@@ -45,53 +44,40 @@ function FormVideo() {
 
     const handleDownload = async () => {
         // Obtener el valor seleccionado en el elemento select
-        const selectedValue = parseInt(selectRef.current.value);
-        
-        // Buscar en el estado mediaOptions para determinar si es un video o un audio
-        const selectedOption = mediaOptions.videos.find(video => video.itag === selectedValue) ||
-                               mediaOptions.audios.find(audio => audio.itag === selectedValue);
-        
-        let endPoint = '';
-        
-        if (selectedOption.tipo === 'video') {
-            mediaOptions.formato = 'mp4'
-            endPoint = 'download-video'
-        } else {
-            mediaOptions.formato = 'mp3'
-            endPoint = 'download-audio'
-        }
-        const itagValue = selectRef.current.value;
+        const itagValue = parseInt(selectRef.current.value);
         const info = await axios.post(`${URLHOST}/api/video-info`, { videoLink });
-        const download = await axios.post(`${URLHOST}/api/${endPoint}`, { videoLink, itagValue }, { responseType: 'blob' });
-        console.log(info.data.info)
+        const download = await axios.post(`${URLHOST}/api/download-audio`, { videoLink, itagValue }, { responseType: 'blob' });
         const blobUrl = window.URL.createObjectURL(new Blob([download.data]));
         setMediaOptions(prevState => ({ ...prevState, title: info.data.title, url: blobUrl }));
     };
 
     return (
-        <div className="mt-5 mx-auto d-flex flex-column justify-content-center align-items-center w-50">
-            <form onSubmit={e => { e.preventDefault(); }}>
-                <label htmlFor="inputUrl">Ingresa la URL del video</label>
-                <input type="text" id="inputUrl" value={videoLink} onChange={handleChange} />
-                <button type="button" onClick={fetchMediaOptions}>Buscar Video</button>
-                <select ref={selectRef}>
-                    <option disabled>Videos</option>
-                    {mediaOptions.videos.map((video, index) => (
-                        <option key={index} value={video.itag}>{video.info}</option>
-                    ))}
-                    <option disabled>Audios</option>
-                    {mediaOptions.audios.map((audio, index) => (
-                        <option key={index} value={audio.itag}>{audio.info}</option>
-                    ))}
-                </select>
-                <button type="button" onClick={handleDownload}>Descargar Video</button>
+        <div className="flex flex-col justify-center items-center mt-20 text-[#EEF5FF]">
+            <form  
+            className="flex flex-col items-center gap-4"
+            onSubmit={e => { e.preventDefault(); }}>
+                <div className="flex items-center">
+                    <input className="w-[200px] lg:w-[400px] h-9 py-2 px-5 text-sm rounded-tl-[30px] bg-[#333a45] border border-solid text-white border-[#f6f7f9] border-r-[.5px] outline-none"
+                    type="text" id="inputUrl" value={videoLink} onChange={handleChange}  autoComplete="off" placeholder="Pegue aquí el link"/>
+                    <Button onClickFunction={fetchMediaOptions} text={"Buscar Video"}/>
+                </div>
+                <div className="flex justify-center">
+                    <SelectField audios={mediaOptions.audios} selectRef={selectRef}/>
+                    {
+                        mediaOptions.url ? (
+                            <DownloadBtn mediaOptions={mediaOptions} text={"Guardar Audio"}/>
+                        ) : (
+                            <>
+                                {loading && <Loading />}
+                                {mediaOptions.audios.length > 0 && (
+                                    <Button onClickFunction={handleDownload} text={"Descargar Audio"} />
+                                )}
+                            </>
+                        )
+                    }
+                </div>
             </form>
-            {loading ? (
-                <Loading />
-            ) : (
-                mediaOptions.url && <a className="btn btn-success mt-3 fs-4" href={mediaOptions.url} download={`${mediaOptions.title}.${mediaOptions.formato}`}>Guardar</a>
-            )}
-            {mediaOptions.iframe && <iframe className="mt-3" src={mediaOptions.iframe} width="600px" height="300px"></iframe>}
+            <Iframe mediaOptions={mediaOptions} />
         </div>
     );
 }
